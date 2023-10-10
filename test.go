@@ -15,6 +15,6 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
-	user, err := userRepo.GetByID("username1")
+	user, err := userRepo.GetByPK("username1")
 	fmt.Printf("User : %v", user)
 }
