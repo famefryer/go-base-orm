@@ -24,10 +24,10 @@ func scanAnnotation(annotation, annotationPattern, filepath string) (string, err
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.Contains(line, "//") && strings.Contains(line, annotation) {
-				matched := regex.FindString(line)
-				fmt.Printf("Annotation = %s\n", matched)
+				result := regex.FindString(line)
+				//fmt.Printf("Annotation = %s\n", result)
 
-				return matched, nil
+				return result, nil
 			}
 		}
 	}
@@ -35,21 +35,50 @@ func scanAnnotation(annotation, annotationPattern, filepath string) (string, err
 	return "", nil
 }
 
+func genGormRepository(annotation string) error {
+	pattern := `"[A-Za-z]*",\s?"[A-Za-z]*"`
+	regex, err := regexp.Compile(pattern)
+	matched := regex.FindString(annotation)
+	if err != nil {
+		return err
+	}
+
+	gormValue := strings.Split(matched, ",")
+	gormAnnoRepo := GormRepositoryAnnotation{
+		tableName:  gormValue[0],
+		primaryKey: gormValue[1],
+	}
+
+	fmt.Println(gormAnnoRepo)
+
+	return nil
+}
+
 func main() {
-	pattern := `@GormRepository\(\{"[A-Za-z]*",\s?"[A-Za-z]*"\}\)`
+	pattern := `@GormRepository\("[A-Za-z]*",\s?"[A-Za-z]*"\)`
 	err := filepath.Walk("./model", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		fmt.Printf("dir: %v: name: %s\n", info.IsDir(), path)
 		if !info.IsDir() {
-			_, err := scanAnnotation("@GormRepository", pattern, path)
+			anno, err := scanAnnotation("@GormRepository", pattern, path)
 			if err != nil {
 				return err
 			}
+			if anno == "" {
+				// skipped file with no annotation
+				return nil
+			}
+
+			fmt.Printf("filename: %s\n", info.Name())
+			err = genGormRepository(anno)
+			if err != nil {
+				return err
+			}
+			fmt.Println("=============================")
 		}
-		fmt.Printf("=====================================\n")
+
 		return nil
 	})
 	if err != nil {
