@@ -33,6 +33,17 @@ func (r *UserRepository) DeleteByPK(id string) error {
 	return tx.Error
 }
 
+func (r *UserRepository) UpdateByPK(object model.User) error {
+	updatesMap := map[string]interface{}{
+		"username": object.Username,
+		"name":     object.Name,
+		"age":      object.Age,
+	}
+	tx := r.db.Table(r.tableName).Updates(updatesMap)
+
+	return tx.Error
+}
+
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return UserRepository{
 		db:         db,
