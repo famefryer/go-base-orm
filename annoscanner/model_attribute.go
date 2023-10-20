@@ -1,4 +1,4 @@
-package main
+package annoscanner
 
 type ModelAttribute struct {
 	name     string
