@@ -15,7 +15,7 @@ func main() {
 			return err
 		}
 		if !info.IsDir() {
-			anno, _, err := annoscanner.ScanAnnotation("@GormRepository", gormanno.GormRepoAnnoPattern, path)
+			anno, attributes, err := annoscanner.ScanAnnotation("@GormRepository", gormanno.GormRepoAnnoPattern, path)
 			if err != nil {
 				return err
 			}
@@ -25,7 +25,7 @@ func main() {
 			}
 
 			fmt.Printf("filename: %s\n", info.Name())
-			err = gormanno.GenGormRepository(anno)
+			err = gormanno.GenGormRepository(anno, attributes)
 			if err != nil {
 				return err
 			}

@@ -8,7 +8,7 @@ import (
 )
 
 const StructDeclarationPattern = `type [a-zA-Z]* struct {`
-const CommentDeclarationPattern = `type [a-zA-Z]* struct {`
+const CommentDeclarationPattern = `//.*`
 const StructLastLine = "}"
 
 func ScanAnnotation(annotation, annotationPattern, filepath string) (string, map[string]ModelAttribute, error) {
@@ -29,7 +29,7 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (string, map
 		//Loop through each line
 		startOfModel := false
 		lastLineOfModel := StructLastLine
-		annotationString := ""
+		var annotationString string
 		for scanner.Scan() {
 			line := scanner.Text()
 
