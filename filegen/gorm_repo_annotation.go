@@ -1,6 +1,7 @@
 package main
 
 type GormRepositoryAnnotation struct {
-	tableName  string
-	primaryKey string
+	TableName  string
+	PrimaryKey string
+	Columns    map[string]ModelAttribute
 }

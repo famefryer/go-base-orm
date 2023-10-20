@@ -9,10 +9,14 @@ import (
 	"strings"
 )
 
-func scanAnnotation(annotation, annotationPattern, filepath string) (string, error) {
+func scanAnnotation(annotation, annotationPattern, filepath string) (string, map[string]ModelAttribute, error) {
+	structPattern, err := regexp.Compile(`type [a-zA-Z]* struct {`)
+	commentPattern, err := regexp.Compile(`//.*`)
+	modelAttrs := make(map[string]ModelAttribute)
+
 	regex, err := regexp.Compile(annotationPattern)
 	if err != nil {
-		return "", err
+		return "", modelAttrs, err
 	}
 
 	file, err := os.Open(filepath)
@@ -21,18 +25,36 @@ func scanAnnotation(annotation, annotationPattern, filepath string) (string, err
 		scanner.Split(bufio.ScanLines)
 
 		//Loop through each line
+		startOfModel := false
+		lastLineOfModel := "}"
+		annotationString := ""
 		for scanner.Scan() {
 			line := scanner.Text()
-			if strings.Contains(line, "//") && strings.Contains(line, annotation) {
-				result := regex.FindString(line)
-				//fmt.Printf("Annotation = %s\n", result)
 
-				return result, nil
+			if startOfModel {
+				if structPattern.MatchString(line) || commentPattern.MatchString(line) {
+					continue
+				}
+
+				if strings.TrimSpace(line) == lastLineOfModel {
+					fmt.Println("Fame")
+					fmt.Printf("%v\n", modelAttrs)
+					fmt.Println("-------")
+					return annotationString, modelAttrs, nil
+				}
+
+				attribute := strings.Split(strings.TrimSpace(scanner.Text()), " ")
+				modelAttrs[attribute[0]] = MakeModelAttribute(attribute[0], attribute[1])
+			}
+
+			if !startOfModel && strings.Contains(line, "//") && strings.Contains(line, annotation) {
+				annotationString = regex.FindString(line)
+				startOfModel = true
 			}
 		}
 	}
 
-	return "", nil
+	return "", modelAttrs, nil
 }
 
 func genGormRepository(annotation string) error {
@@ -43,10 +65,12 @@ func genGormRepository(annotation string) error {
 		return err
 	}
 
+	columnMap := make(map[string]ModelAttribute)
 	gormValue := strings.Split(matched, ",")
 	gormAnnoRepo := GormRepositoryAnnotation{
-		tableName:  gormValue[0],
-		primaryKey: gormValue[1],
+		TableName:  gormValue[0],
+		PrimaryKey: gormValue[1],
+		Columns:    columnMap,
 	}
 
 	fmt.Println(gormAnnoRepo)
@@ -62,7 +86,7 @@ func main() {
 			return err
 		}
 		if !info.IsDir() {
-			anno, err := scanAnnotation("@GormRepository", pattern, path)
+			anno, _, err := scanAnnotation("@GormRepository", pattern, path)
 			if err != nil {
 				return err
 			}
