@@ -2,7 +2,9 @@ package gormanno
 
 import (
 	"base-orm/annoscanner"
+	"bytes"
 	"fmt"
+	"github.com/dave/jennifer/jen"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,26 +18,25 @@ const GormRepoAnno = "@GormRepository"
 type GormAnnotationScanner struct {
 }
 
-func (g *GormAnnotationScanner) genGormRepository(annotation string, attributes map[string]annoscanner.ModelAttribute) error {
+func (g *GormAnnotationScanner) genGormRepository(annotation string, attributes map[string]annoscanner.ModelAttribute) (GormRepositoryAnnotation, error) {
 	regex, err := regexp.Compile(GormRepoParamPattern)
 	matched := regex.FindString(annotation)
 	if err != nil {
-		return err
+		return GormRepositoryAnnotation{}, err
 	}
 
-	gormValue := strings.Split(matched, ",")
+	gormValue := strings.Split(strings.ReplaceAll(matched, "\"", ""), ",")
 	gormAnnoRepo := GormRepositoryAnnotation{
 		TableName:  gormValue[0],
 		PrimaryKey: gormValue[1],
 		Columns:    attributes,
 	}
 
-	fmt.Println(gormAnnoRepo)
-
-	return nil
+	return gormAnnoRepo, nil
 }
 
-func (g *GormAnnotationScanner) Scan(dir string) error {
+func (g *GormAnnotationScanner) scan(dir string) ([]GormRepositoryAnnotation, error) {
+	var gormRepos []GormRepositoryAnnotation
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
@@ -52,20 +53,61 @@ func (g *GormAnnotationScanner) Scan(dir string) error {
 				return nil
 			}
 
-			fmt.Printf("filename: %s\n", info.Name())
-			err = g.genGormRepository(anno, attributes)
+			gormRepo, err := g.genGormRepository(anno, attributes)
 			if err != nil {
 				return err
 			}
-			fmt.Println("=============================")
+
+			gormRepos = append(gormRepos, gormRepo)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
+	return gormRepos, nil
+}
+
+func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
+	fmt.Println("Start generating gorm repository....")
+	gormRepos, err := g.scan(modelDir)
+	if err != nil {
+		return err
+	}
+
+	// Gen output path
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		err := os.MkdirAll(outputDir, 0777)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// Gen output files
+	for _, gormRepo := range gormRepos {
+		filename := fmt.Sprintf("%s_gen", gormRepo.TableName)
+		file, err := os.Create(fmt.Sprintf("./gen/%s.go", filename))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		f := jen.NewFilePath("./gen/repository")
+
+		f.Func().Id("main").Params().Block(
+			jen.Qual("a.b/c", "Foo").Call(),
+		)
+
+		buff := &bytes.Buffer{}
+		err = f.Render(buff)
+		if err != nil {
+			fmt.Println(err)
+		}
+		_, err = file.WriteString(buff.String())
+	}
+
+	fmt.Println("Finish generating gorm repository....")
 	return nil
 }

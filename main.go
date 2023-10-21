@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
+	// Scan gorm annotation
 	gormAnnoGen := gormanno.GormAnnotationScanner{}
-	err := gormAnnoGen.Scan("./model")
+	err := gormAnnoGen.Execute("./model", "./gen")
 	if err != nil {
 		fmt.Println(err)
 	}
