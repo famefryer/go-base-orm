@@ -11,14 +11,19 @@ const StructDeclarationPattern = `type [a-zA-Z]* struct {`
 const CommentDeclarationPattern = `//.*`
 const StructLastLine = "}"
 
-func ScanAnnotation(annotation, annotationPattern, filepath string) (string, map[string]ModelAttribute, error) {
+func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, error) {
 	structPattern, err := regexp.Compile(StructDeclarationPattern)
 	commentPattern, err := regexp.Compile(CommentDeclarationPattern)
-	modelAttrs := make(map[string]ModelAttribute)
+
+	model := Model{
+		Name:       "",
+		Annotation: "",
+		Attributes: make(map[string]ModelAttribute),
+	}
 
 	regex, err := regexp.Compile(annotationPattern)
 	if err != nil {
-		return "", modelAttrs, err
+		return model, err
 	}
 
 	file, err := os.Open(filepath)
@@ -29,34 +34,40 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (string, map
 		//Loop through each line
 		startOfModel := false
 		lastLineOfModel := StructLastLine
-		var annotationString string
 		for scanner.Scan() {
 			line := scanner.Text()
 
 			// Start extracting model's attribute
 			if startOfModel {
 				// Skip the struct declaration line and all comments
-				if structPattern.MatchString(line) || commentPattern.MatchString(line) {
+				if commentPattern.MatchString(line) {
+					continue
+				}
+
+				// Extract model name from the first line
+				if structPattern.MatchString(line) {
+					structDC := strings.Fields(strings.TrimSpace(line))
+					model.Name = structDC[1]
 					continue
 				}
 
 				// Stop finding attribute when reaching the end of struct
 				if strings.TrimSpace(line) == lastLineOfModel {
-					return annotationString, modelAttrs, nil
+					return model, nil
 				}
 
 				// Extract model's attribute to this sample format {name:username, dataType:string}
 				attribute := strings.Fields(strings.TrimSpace(line))
-				modelAttrs[attribute[0]] = MakeModelAttribute(attribute[0], attribute[1])
+				model.Attributes[attribute[0]] = MakeModelAttribute(attribute[0], attribute[1])
 			}
 
 			// Toggle startOfModel when it detects annotation
 			if !startOfModel && strings.Contains(line, "//") && strings.Contains(line, annotation) {
-				annotationString = regex.FindString(line)
+				model.Annotation = regex.FindString(line)
 				startOfModel = true
 			}
 		}
 	}
 
-	return "", modelAttrs, nil
+	return model, nil
 }
