@@ -1,13 +1,13 @@
 package annoscanner
 
 type ModelAttribute struct {
-	name     string
-	dataType string
+	Name     string
+	DataType string
 }
 
 func MakeModelAttribute(name, dataType string) ModelAttribute {
 	return ModelAttribute{
-		name:     name,
-		dataType: dataType,
+		Name:     name,
+		DataType: dataType,
 	}
 }

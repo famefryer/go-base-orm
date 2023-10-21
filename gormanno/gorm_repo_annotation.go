@@ -8,5 +8,5 @@ type GormRepositoryAnnotation struct {
 	ModelName  string
 	TableName  string
 	PrimaryKey string
-	Columns    map[string]annoscanner.ModelAttribute
+	Attributes map[string]annoscanner.ModelAttribute
 }

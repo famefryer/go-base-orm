@@ -15,6 +15,8 @@ const GormRepoAnnoPattern = `@GormRepository\("[A-Za-z]*",\s?"[A-Za-z]*"\)`
 const GormRepoParamPattern = `"[A-Za-z]*",\s?"[A-Za-z]*"`
 const GormRepoAnno = "@GormRepository"
 
+const TypeGormDB = "*gorm.DB"
+
 type GormAnnotationScanner struct {
 }
 
@@ -30,7 +32,7 @@ func (g *GormAnnotationScanner) genGormRepository(model annoscanner.Model) (Gorm
 		ModelName:  model.Name,
 		TableName:  gormValue[0],
 		PrimaryKey: gormValue[1],
-		Columns:    model.Attributes,
+		Attributes: model.Attributes,
 	}
 
 	return gormAnnoRepo, nil
@@ -82,7 +84,7 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 		return err
 	}
 
-	// Gen output path
+	// Gen output directory
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		err := os.MkdirAll(outputDir, 0777)
 		if err != nil {
@@ -99,18 +101,34 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 			fmt.Println(err)
 		}
 
+		// dataTypeReps use to replace "datatype" to datatype in final code ex. "string" -> string
+		dataTypeReps := make(map[string]string)
+		dataTypeReps["\"*gorm.DB\""] = TypeGormDB
+
+		var structAttrs []jen.Code
+		structAttrs = append(structAttrs, jen.Id("db").Lit(TypeGormDB))
+
+		for _, attr := range gormRepo.Attributes {
+			structAttrs = append(structAttrs, jen.Id(attr.Name).Lit(attr.DataType))
+			dataTypeReps[fmt.Sprintf("\"%s\"", attr.DataType)] = attr.DataType
+		}
+
+		// Generate jennifer file
 		f := jen.NewFile(packageName)
-
-		f.Func().Id("main").Params().Block(
-			jen.Qual("a.b/c", "Foo").Call(),
-		)
-
+		f.Type().Id(fmt.Sprintf("%sRepository", gormRepo.ModelName)).Struct(structAttrs...)
 		buff := &bytes.Buffer{}
 		err = f.Render(buff)
 		if err != nil {
 			fmt.Println(err)
 		}
-		_, err = file.WriteString(buff.String())
+
+		// Replace "datatype" -> datatype
+		finalCode := buff.String()
+		for dtrKey, dtrVal := range dataTypeReps {
+			finalCode = strings.ReplaceAll(finalCode, dtrKey, dtrVal)
+		}
+
+		_, err = file.WriteString(finalCode)
 	}
 
 	fmt.Println("Finish generating gorm repository....")
