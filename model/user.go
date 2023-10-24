@@ -4,6 +4,7 @@ package model
 type User struct {
 	Username string `gorm:"primarykey"`
 	// dsf
-	Name string
-	Age  int
+	Name        string
+	Age         int
+	CompanyName string
 }

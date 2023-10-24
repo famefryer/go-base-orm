@@ -9,11 +9,13 @@ import (
 
 const StructDeclarationPattern = `type [a-zA-Z]* struct {`
 const CommentDeclarationPattern = `//.*`
+const PackagePattern = `package .*`
 const StructLastLine = "}"
 
 func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, error) {
 	structPattern, err := regexp.Compile(StructDeclarationPattern)
 	commentPattern, err := regexp.Compile(CommentDeclarationPattern)
+	packagePattern, err := regexp.Compile(PackagePattern)
 
 	model := Model{
 		Name:       "",
@@ -39,6 +41,12 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 	lastLineOfModel := StructLastLine
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// Extract package name
+		if packagePattern.MatchString(line) {
+			packages := strings.Fields(line)
+			model.Package = packages[1]
+		}
 
 		// Start extracting model's attribute
 		if startOfModel {

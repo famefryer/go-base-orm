@@ -17,6 +17,8 @@ const GormRepoAnno = "@GormRepository"
 
 const TypeGormDB = "*gorm.DB"
 
+//var DefaultTypes = []string{"string", "bool", "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "float32", "float64", "complex64", "complex128"}
+
 type GormAnnotationScanner struct {
 }
 
@@ -29,10 +31,11 @@ func (g *GormAnnotationScanner) genGormRepository(model annoscanner.Model) (Gorm
 
 	gormValue := strings.Split(strings.ReplaceAll(matched, "\"", ""), ",")
 	gormAnnoRepo := GormRepositoryAnnotation{
-		ModelName:  model.Name,
-		TableName:  gormValue[0],
-		PrimaryKey: gormValue[1],
-		Attributes: model.Attributes,
+		ModelName:    model.Name,
+		ModelPackage: model.Package,
+		TableName:    gormValue[0],
+		PrimaryKey:   gormValue[1],
+		Attributes:   model.Attributes,
 	}
 
 	return gormAnnoRepo, nil
@@ -105,17 +108,19 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 		dataTypeReps := make(map[string]string)
 		dataTypeReps["\"*gorm.DB\""] = TypeGormDB
 
-		var structAttrs []jen.Code
-		structAttrs = append(structAttrs, jen.Id("db").Lit(TypeGormDB))
-
-		for _, attr := range gormRepo.Attributes {
-			structAttrs = append(structAttrs, jen.Id(attr.Name).Lit(attr.DataType))
-			dataTypeReps[fmt.Sprintf("\"%s\"", attr.DataType)] = attr.DataType
-		}
-
 		// Generate jennifer file
 		f := jen.NewFile(packageName)
-		f.Type().Id(fmt.Sprintf("%sRepository", gormRepo.ModelName)).Struct(structAttrs...)
+		f.ImportName("github.com/foo/a", "a")
+		f.ImportName("gorm.io/gorm", "")
+		f.Type().Id(fmt.Sprintf("%sRepository", gormRepo.ModelName)).Struct(
+			jen.Id("db").Lit(TypeGormDB),
+			jen.Id("tableName").String(),
+			jen.Id("primaryKey").String(),
+		)
+		f.Func().Id("GetByPK").Params(jen.Id("id").String()).Block(
+			jen.Qual("gorm.io/gorm", "gorm").Call(),
+		)
+		fmt.Printf("%#v", f)
 		buff := &bytes.Buffer{}
 		err = f.Render(buff)
 		if err != nil {
