@@ -1,4 +1,4 @@
-package repository
+package samplerepository
 
 func (r *UserRepository) GetByName() {
 }

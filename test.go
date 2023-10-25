@@ -7,7 +7,7 @@ package main
 //		fmt.Printf("error : %v", err)
 //	}
 //
-//	userRepo := repository.NewUserRepository(db)
+//	userRepo := samplerepository.NewUserRepository(db)
 //	user, err := userRepo.GetByPK("username1")
 //	fmt.Printf("User : %v", user)
 //}

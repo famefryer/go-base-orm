@@ -1,4 +1,4 @@
-package repository
+package samplerepository
 
 import (
 	"base-orm/model"
