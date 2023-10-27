@@ -173,6 +173,15 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 			jen.Return(jen.Id("tx.Error")),
 		).Line()
 
+		// function NewGormRepository
+		f.Func().Id(fmt.Sprintf("New%s", repoName)).Params(
+			jen.Id("db").Id(TypeGormDB),
+		).Params(
+			jen.Id(repoName),
+		).Block(
+			jen.Return(jen.Id(fmt.Sprintf("%s{db: db, tableName: \"%s\", primaryKey: \"%s\"}", repoName, gormRepo.TableName, gormRepo.PrimaryKey))),
+		).Line()
+
 		buff := &bytes.Buffer{}
 		err = f.Render(buff)
 		if err != nil {

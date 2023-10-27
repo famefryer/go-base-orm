@@ -45,9 +45,5 @@ func (r *UserRepository) UpdateByPK(object model.User) error {
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return UserRepository{
-		db:         db,
-		tableName:  "user",
-		primaryKey: "username",
-	}
+	return UserRepository{db: db, tableName: "user", primaryKey: "username"}
 }

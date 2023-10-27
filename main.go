@@ -1,6 +1,7 @@
 package main
 
 import (
+	repository "base-orm/gen"
 	"base-orm/gormanno"
 	"fmt"
 )
@@ -12,4 +13,5 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+	repository.CompanyRepository{}
 }
