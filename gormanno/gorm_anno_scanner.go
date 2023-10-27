@@ -105,25 +105,74 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 		}
 
 		// Generate jennifer file
-		modelName := fmt.Sprintf("%sRepository", gormRepo.ModelName)
+		repoName := fmt.Sprintf("%sRepository", gormRepo.ModelName)
+		modelType := fmt.Sprintf("%s.%s", gormRepo.ModelPackage, gormRepo.ModelName)
+		queryByPK := "fmt.Sprintf(\"%s = ?\", r.primaryKey)"
+		attrMap := jen.Dict{}
+		for _, attr := range gormRepo.Attributes {
+			attrMap[jen.Lit(attr.Name)] = jen.Id(fmt.Sprintf("object.%s", attr.Name))
+		}
+
 		f := jen.NewFile(packageName)
-		f.ImportName("gorm.io/gorm", "")
-		f.Type().Id(modelName).Struct(
+		f.Type().Id(repoName).Struct(
 			jen.Id("db").Id(TypeGormDB),
 			jen.Id("tableName").String(),
 			jen.Id("primaryKey").String(),
 		)
+
+		// function GetByPK
 		f.Func().Params(
-			jen.Id("r").Id(fmt.Sprintf("*%s", modelName)),
+			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
 		).Id("GetByPK").Params(
 			jen.Id("id").String(),
 		).Params(
-			jen.Id("model.User"),
+			jen.Id(modelType),
 			jen.Id("error"),
 		).Block(
-			jen.Qual("gorm.io/gorm", "gorm").Call(),
-		)
-		fmt.Printf("%#v", f)
+			jen.Var().Id("result").Id(modelType),
+			jen.Id("query").Op(":=").Id(queryByPK),
+			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Where(query, id).First(&result)"),
+			jen.Return(jen.Id("result, tx.Error")),
+		).Line()
+
+		// function Create
+		f.Func().Params(
+			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
+		).Id("Create").Params(
+			jen.Id("object").Id(modelType),
+		).Params(
+			jen.Id("error"),
+		).Block(
+			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Create(object)"),
+			jen.Return(jen.Id("tx.Error")),
+		).Line()
+
+		// function DeleteByPK
+		f.Func().Params(
+			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
+		).Id("DeleteByPK").Params(
+			jen.Id("id").String(),
+		).Params(
+			jen.Id("error"),
+		).Block(
+			jen.Id("query").Op(":=").Id(queryByPK),
+			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Where(query, id).Delete(&model.User{})"),
+			jen.Return(jen.Id("tx.Error")),
+		).Line()
+
+		// function UpdateByPK
+		f.Func().Params(
+			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
+		).Id("UpdateByPK").Params(
+			jen.Id("object").Id(modelType),
+		).Params(
+			jen.Id("error"),
+		).Block(
+			jen.Id("updatesMap").Op(":=").Map(jen.String()).Interface().Values(attrMap),
+			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Updates(updatesMap)"),
+			jen.Return(jen.Id("tx.Error")),
+		).Line()
+
 		buff := &bytes.Buffer{}
 		err = f.Render(buff)
 		if err != nil {
