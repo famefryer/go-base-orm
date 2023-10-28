@@ -13,9 +13,9 @@ const PackagePattern = `package .*`
 const StructLastLine = "}"
 
 func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, error) {
-	structPattern, err := regexp.Compile(StructDeclarationPattern)
-	commentPattern, err := regexp.Compile(CommentDeclarationPattern)
-	packagePattern, err := regexp.Compile(PackagePattern)
+	structRegex, err := regexp.Compile(StructDeclarationPattern)
+	commentRegex, err := regexp.Compile(CommentDeclarationPattern)
+	packageRegex, err := regexp.Compile(PackagePattern)
 
 	model := Model{
 		Name:       "",
@@ -23,7 +23,7 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 		Attributes: make(map[string]ModelAttribute),
 	}
 
-	regex, err := regexp.Compile(annotationPattern)
+	annoRegex, err := regexp.Compile(annotationPattern)
 	if err != nil {
 		return model, err
 	}
@@ -43,7 +43,7 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 		line := scanner.Text()
 
 		// Extract package name
-		if packagePattern.MatchString(line) {
+		if packageRegex.MatchString(line) {
 			packages := strings.Fields(line)
 			model.Package = packages[1]
 		}
@@ -51,12 +51,12 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 		// Start extracting model's attribute
 		if startOfModel {
 			// Skip the struct declaration line and all comments
-			if commentPattern.MatchString(line) {
+			if commentRegex.MatchString(line) {
 				continue
 			}
 
 			// Extract model name from the first line
-			if structPattern.MatchString(line) {
+			if structRegex.MatchString(line) {
 				structDC := strings.Fields(strings.TrimSpace(line))
 				model.Name = structDC[1]
 				continue
@@ -74,7 +74,7 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 
 		// Toggle startOfModel when it detects annotation
 		if !startOfModel && strings.Contains(line, "//") && strings.Contains(line, annotation) {
-			model.Annotation = regex.FindString(line)
+			model.Annotation = annoRegex.FindString(line)
 			startOfModel = true
 		}
 	}

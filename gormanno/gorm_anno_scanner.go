@@ -78,7 +78,7 @@ func (g *GormAnnotationScanner) scan(dir string) ([]GormRepositoryAnnotation, er
 }
 
 func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
-	fmt.Println("Start generating gorm samplerepository....")
+	fmt.Println("Start generating gorm repository....")
 
 	packageName := "repository"
 
@@ -98,7 +98,7 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 	// Gen output files
 	for _, gormRepo := range gormRepos {
 		filename := fmt.Sprintf("%s_gen", strings.ToLower(gormRepo.ModelName))
-		file, err := os.Create(fmt.Sprintf("./gen/%s.go", filename))
+		file, err := os.Create(fmt.Sprintf("./%s/%s.go", outputDir, filename))
 
 		if err != nil {
 			fmt.Println(err)
@@ -114,6 +114,9 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 		}
 
 		f := jen.NewFile(packageName)
+
+		f.Id("import (\n\t\"gorm.io/gorm\"\n\t\"fmt\"\n)")
+
 		f.Type().Id(repoName).Struct(
 			jen.Id("db").Id(TypeGormDB),
 			jen.Id("tableName").String(),
@@ -192,7 +195,7 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 		_, err = file.WriteString(finalCode)
 	}
 
-	fmt.Println("Finish generating gorm samplerepository....")
+	fmt.Println("Finish generating gorm repository....")
 
 	return nil
 }

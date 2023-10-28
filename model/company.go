@@ -2,5 +2,6 @@ package model
 
 // @GormRepository("company", "name")
 type Company struct {
-	Name string
+	Name   string
+	Branch CompanyBranch
 }

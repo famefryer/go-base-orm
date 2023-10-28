@@ -1,7 +1,6 @@
 package main
 
 import (
-	repository "base-orm/gen"
 	"base-orm/gormanno"
 	"fmt"
 )
@@ -9,9 +8,8 @@ import (
 func main() {
 	// Scan gorm annotation
 	gormAnnoGen := gormanno.GormAnnotationScanner{}
-	err := gormAnnoGen.Execute("./model", "./gen")
+	err := gormAnnoGen.Execute("./model", "./repository")
 	if err != nil {
 		fmt.Println(err)
 	}
-	repository.CompanyRepository{}
 }
