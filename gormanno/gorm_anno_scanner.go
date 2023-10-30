@@ -20,6 +20,9 @@ const TypeGormDB = "*gorm.DB"
 //var DefaultTypes = []string{"string", "bool", "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "float32", "float64", "complex64", "complex128"}
 
 type GormAnnotationScanner struct {
+	projectName     string
+	modelDirectory  string
+	outputDirectory string
 }
 
 func (g *GormAnnotationScanner) genGormRepository(model annoscanner.Model) (GormRepositoryAnnotation, error) {
@@ -31,26 +34,27 @@ func (g *GormAnnotationScanner) genGormRepository(model annoscanner.Model) (Gorm
 
 	gormValue := strings.Split(strings.ReplaceAll(matched, "\"", ""), ",")
 	gormAnnoRepo := GormRepositoryAnnotation{
-		ModelName:    model.Name,
-		ModelPackage: model.Package,
-		TableName:    gormValue[0],
-		PrimaryKey:   gormValue[1],
-		Attributes:   model.Attributes,
+		ModelImportPackagePath: model.ImportPackagePath,
+		ModelName:              model.Name,
+		ModelPackage:           model.Package,
+		TableName:              gormValue[0],
+		PrimaryKey:             gormValue[1],
+		Attributes:             model.Attributes,
 	}
 
 	return gormAnnoRepo, nil
 }
 
-func (g *GormAnnotationScanner) scan(dir string) ([]GormRepositoryAnnotation, error) {
+func (g *GormAnnotationScanner) scan() ([]GormRepositoryAnnotation, error) {
 	var gormRepos []GormRepositoryAnnotation
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(g.modelDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 
 		if !info.IsDir() {
-			model, err := annoscanner.ScanAnnotation(GormRepoAnno, GormRepoAnnoPattern, path)
+			model, err := annoscanner.ScanAnnotation(g.projectName, GormRepoAnno, GormRepoAnnoPattern, path)
 			if err != nil {
 				return err
 			}
@@ -77,28 +81,12 @@ func (g *GormAnnotationScanner) scan(dir string) ([]GormRepositoryAnnotation, er
 	return gormRepos, nil
 }
 
-func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
-	fmt.Println("Start generating gorm repository....")
-
+func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotation) error {
 	packageName := "repository"
 
-	gormRepos, err := g.scan(modelDir)
-	if err != nil {
-		return err
-	}
-
-	// Gen output directory
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err := os.MkdirAll(outputDir, 0777)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	// Gen output files
 	for _, gormRepo := range gormRepos {
 		filename := fmt.Sprintf("%s_gen", strings.ToLower(gormRepo.ModelName))
-		file, err := os.Create(fmt.Sprintf("./%s/%s.go", outputDir, filename))
+		file, err := os.Create(fmt.Sprintf("./%s/%s.go", g.outputDirectory, filename))
 
 		if err != nil {
 			fmt.Println(err)
@@ -115,7 +103,7 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 
 		f := jen.NewFile(packageName)
 
-		f.Id("import (\n\t\"gorm.io/gorm\"\n\t\"fmt\"\n)")
+		f.Id(fmt.Sprintf("import (\n\t\"gorm.io/gorm\"\n\t\"fmt\"\n\t\"%s\"\n)", gormRepo.ModelImportPackagePath))
 
 		f.Type().Id(repoName).Struct(
 			jen.Id("db").Id(TypeGormDB),
@@ -193,6 +181,35 @@ func (g *GormAnnotationScanner) Execute(modelDir, outputDir string) error {
 
 		finalCode := buff.String()
 		_, err = file.WriteString(finalCode)
+	}
+
+	return nil
+}
+
+func (g *GormAnnotationScanner) Execute(projectName, modelDir, outputDir string) error {
+	fmt.Println("Start generating gorm repository....")
+
+	g.projectName = projectName
+	g.modelDirectory = modelDir
+	g.outputDirectory = outputDir
+
+	gormRepos, err := g.scan()
+	if err != nil {
+		return err
+	}
+
+	// Gen output directory
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		err := os.MkdirAll(outputDir, 0777)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// Gen output files
+	err = g.genOutputFile(gormRepos)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	fmt.Println("Finish generating gorm repository....")

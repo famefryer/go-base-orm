@@ -2,6 +2,7 @@ package annoscanner
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -12,7 +13,7 @@ const CommentDeclarationPattern = `//.*`
 const PackagePattern = `package .*`
 const StructLastLine = "}"
 
-func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, error) {
+func ScanAnnotation(projectName, annotation, annotationPattern, filepath string) (Model, error) {
 	structRegex, err := regexp.Compile(StructDeclarationPattern)
 	commentRegex, err := regexp.Compile(CommentDeclarationPattern)
 	packageRegex, err := regexp.Compile(PackagePattern)
@@ -35,6 +36,11 @@ func ScanAnnotation(annotation, annotationPattern, filepath string) (Model, erro
 
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
+
+	// Build Model Import Package Path
+	lastDirIndex := strings.LastIndex(filepath, "/")
+	dir := filepath[:lastDirIndex]
+	model.ImportPackagePath = fmt.Sprintf("%s/%s", projectName, dir)
 
 	//Loop through each line
 	startOfModel := false
