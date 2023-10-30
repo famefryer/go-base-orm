@@ -111,12 +111,12 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 			jen.Id("primaryKey").String(),
 		)
 
-		// function GetByPK
-		f.Comment("GetByPK query object from database with primary key.")
+		// function FindByPK
+		f.Comment("FindByPK query object from database with primary key.")
 		f.Comment("return object and nil if it exists in database")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
-		).Id("GetByPK").Params(
+		).Id("FindByPK").Params(
 			jen.Id("id").String(),
 		).Params(
 			jen.Id(modelType),
@@ -128,8 +128,22 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 			jen.Return(jen.Id("result, tx.Error")),
 		).Line()
 
+		// function FindAll
+		f.Comment("FindAll get all records in database")
+		f.Comment("return list if all records in database and error")
+		f.Func().Params(
+			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
+		).Id("FindAll").Params().Params(
+			jen.Id(fmt.Sprintf("[]%s", modelType)),
+			jen.Id("error"),
+		).Block(
+			jen.Var().Id("result").Id(fmt.Sprintf("[]%s", modelType)),
+			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Find(&result)"),
+			jen.Return(jen.Id("result, tx.Error")),
+		).Line()
+
 		// function Create
-		f.Comment("Create create new record in database")
+		f.Comment("Create insert new record into database")
 		f.Comment("return nil if create success")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),

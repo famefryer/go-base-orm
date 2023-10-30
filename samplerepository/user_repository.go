@@ -44,6 +44,13 @@ func (r *UserRepository) UpdateByPK(object model.User) error {
 	return tx.Error
 }
 
+func (r *UserRepository) findAll() ([]model.User, error) {
+	var result []model.User
+	tx := r.db.Table(r.tableName).Find(&result)
+
+	return result, tx.Error
+}
+
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return UserRepository{db: db, tableName: "user", primaryKey: "username"}
 }

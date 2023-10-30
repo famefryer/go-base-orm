@@ -12,16 +12,24 @@ type CompanyRepository struct {
 	primaryKey string
 }
 
-// GetByPK query object from database with primary key.
+// FindByPK query object from database with primary key.
 // return object and nil if it exists in database
-func (r *CompanyRepository) GetByPK(id string) (model.Company, error) {
+func (r *CompanyRepository) FindByPK(id string) (model.Company, error) {
 	var result model.Company
 	query := fmt.Sprintf("%s = ?", r.primaryKey)
 	tx := r.db.Table(r.tableName).Where(query, id).First(&result)
 	return result, tx.Error
 }
 
-// Create create new record in database
+// FindAll get all records in database
+// return list if all records in database and error
+func (r *CompanyRepository) FindAll() ([]model.Company, error) {
+	var result []model.Company
+	tx := r.db.Table(r.tableName).Find(&result)
+	return result, tx.Error
+}
+
+// Create insert new record into database
 // return nil if create success
 func (r *CompanyRepository) Create(object model.Company) error {
 	tx := r.db.Table(r.tableName).Create(object)
