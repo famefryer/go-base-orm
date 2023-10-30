@@ -112,6 +112,8 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 		)
 
 		// function GetByPK
+		f.Comment("GetByPK query object from database with primary key.")
+		f.Comment("return object and nil if it exists in database")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
 		).Id("GetByPK").Params(
@@ -127,6 +129,8 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 		).Line()
 
 		// function Create
+		f.Comment("Create create new record in database")
+		f.Comment("return nil if create success")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
 		).Id("Create").Params(
@@ -139,6 +143,8 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 		).Line()
 
 		// function DeleteByPK
+		f.Comment("DeleteByPK record in database by primary key")
+		f.Comment("return nil if delete success")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
 		).Id("DeleteByPK").Params(
@@ -152,6 +158,8 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 		).Line()
 
 		// function UpdateByPK
+		f.Comment("UpdateByPK update existing record in database")
+		f.Comment("return nil if update success")
 		f.Func().Params(
 			jen.Id("r").Id(fmt.Sprintf("*%s", repoName)),
 		).Id("UpdateByPK").Params(
@@ -165,12 +173,14 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 		).Line()
 
 		// function NewGormRepository
-		f.Func().Id(fmt.Sprintf("New%s", repoName)).Params(
+		newFnc := fmt.Sprintf("New%s", repoName)
+		f.Comment(fmt.Sprintf("%s create new gorm repository instance for %s", newFnc, gormRepo.ModelName))
+		f.Func().Id(newFnc).Params(
 			jen.Id("db").Id(TypeGormDB),
 		).Params(
-			jen.Id(repoName),
+			jen.Id(fmt.Sprintf("*%s", repoName)),
 		).Block(
-			jen.Return(jen.Id(fmt.Sprintf("%s{db: db, tableName: \"%s\", primaryKey: \"%s\"}", repoName, gormRepo.TableName, gormRepo.PrimaryKey))),
+			jen.Return(jen.Id(fmt.Sprintf("&%s{db: db, tableName: \"%s\", primaryKey: \"%s\"}", repoName, gormRepo.TableName, gormRepo.PrimaryKey))),
 		).Line()
 
 		buff := &bytes.Buffer{}

@@ -12,6 +12,8 @@ type UserRepository struct {
 	primaryKey string
 }
 
+// GetByPK query object from database with primary key.
+// return object and nil if it exists in database
 func (r *UserRepository) GetByPK(id string) (model.User, error) {
 	var result model.User
 	query := fmt.Sprintf("%s = ?", r.primaryKey)
@@ -19,17 +21,23 @@ func (r *UserRepository) GetByPK(id string) (model.User, error) {
 	return result, tx.Error
 }
 
+// Create create new record in database
+// return nil if create success
 func (r *UserRepository) Create(object model.User) error {
 	tx := r.db.Table(r.tableName).Create(object)
 	return tx.Error
 }
 
+// DeleteByPK record in database by primary key
+// return nil if delete success
 func (r *UserRepository) DeleteByPK(id string) error {
 	query := fmt.Sprintf("%s = ?", r.primaryKey)
 	tx := r.db.Table(r.tableName).Where(query, id).Delete(&model.User{})
 	return tx.Error
 }
 
+// UpdateByPK update existing record in database
+// return nil if update success
 func (r *UserRepository) UpdateByPK(object model.User) error {
 	updatesMap := map[string]interface{}{
 		"Age":         object.Age,
@@ -41,6 +49,7 @@ func (r *UserRepository) UpdateByPK(object model.User) error {
 	return tx.Error
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return UserRepository{db: db, tableName: "user", primaryKey: " username"}
+// NewUserRepository create new gorm repository instance for User
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db, tableName: "user", primaryKey: " username"}
 }
