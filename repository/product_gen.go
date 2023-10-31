@@ -40,7 +40,7 @@ func (r *ProductRepository) Create(object submode.Product) error {
 // return nil if delete success
 func (r *ProductRepository) DeleteByPK(id string) error {
 	query := fmt.Sprintf("%s = ?", r.primaryKey)
-	tx := r.db.Table(r.tableName).Where(query, id).Delete(&model.User{})
+	tx := r.db.Table(r.tableName).Where(query, id).Delete(&submode.Product{})
 	return tx.Error
 }
 

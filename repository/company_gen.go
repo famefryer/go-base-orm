@@ -40,7 +40,7 @@ func (r *CompanyRepository) Create(object model.Company) error {
 // return nil if delete success
 func (r *CompanyRepository) DeleteByPK(id string) error {
 	query := fmt.Sprintf("%s = ?", r.primaryKey)
-	tx := r.db.Table(r.tableName).Where(query, id).Delete(&model.User{})
+	tx := r.db.Table(r.tableName).Where(query, id).Delete(&model.Company{})
 	return tx.Error
 }
 

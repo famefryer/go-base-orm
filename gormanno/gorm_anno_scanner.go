@@ -167,7 +167,7 @@ func (g *GormAnnotationScanner) genOutputFile(gormRepos []GormRepositoryAnnotati
 			jen.Id("error"),
 		).Block(
 			jen.Id("query").Op(":=").Id(queryByPK),
-			jen.Id("tx").Op(":=").Id("r.db.Table(r.tableName).Where(query, id).Delete(&model.User{})"),
+			jen.Id("tx").Op(":=").Id(fmt.Sprintf("r.db.Table(r.tableName).Where(query, id).Delete(&%s{})", modelType)),
 			jen.Return(jen.Id("tx.Error")),
 		).Line()
 
